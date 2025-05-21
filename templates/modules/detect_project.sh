@@ -1,34 +1,39 @@
 #!/bin/bash
 
-# =====================================================================
-# detect_project.sh - Module de détection du type de projet
-# =====================================================================
+# detect_project.sh - Détection du type de projet
+# Ce module identifie automatiquement le langage du projet
+# en fonction des fichiers présents dans le répertoire courant
 
-# Vérification des arguments
-if [ $# -ne 1 ]; then
-    echo "Usage: $0 <project_directory>"
-    exit 1
-fi
+LANG=""
 
-PROJECT_DIR="$1"
+# Fonction de log simplifié
+function log_detect {
+  echo "[DETECT] $1"
+}
 
-# Vérification que le répertoire existe
-if [ ! -d "${PROJECT_DIR}" ]; then
-    echo "ERROR: Le répertoire du projet n'existe pas: ${PROJECT_DIR}"
-    exit 1
-fi
+# Fonction de détection
+function detect_language {
+  if [ -f "package.json" ]; then
+    LANG="nodejs"
+    log_detect "Projet Node.js détecté (package.json trouvé)"
+  elif [ -f "requirements.txt" ] || [ -f "setup.py" ]; then
+    LANG="python"
+    log_detect "Projet Python détecté (requirements.txt ou setup.py trouvé)"
+  elif [ -f "composer.json" ]; then
+    LANG="php"
+    log_detect "Projet PHP détecté (composer.json trouvé)"
+  elif ls *.java &>/dev/null; then
+    LANG="java"
+    log_detect "Projet Java détecté (*.java trouvé)"
+  else
+    log_detect "Aucun langage détecté automatiquement."
+    LANG="unknown"
+  fi
 
-# Détection basée sur les fichiers présents
-if [ -f "${PROJECT_DIR}/package.json" ]; then
-    echo "nodejs"
-    exit 0
-elif [ -f "${PROJECT_DIR}/requirements.txt" ] || [ -f "${PROJECT_DIR}/setup.py" ]; then
-    echo "python"
-    exit 0
-elif [ -f "${PROJECT_DIR}/pom.xml" ] || [ -f "${PROJECT_DIR}/build.gradle" ]; then
-    echo "java"
-    exit 0
-else
-    echo "unknown"
-    exit 1
+  echo "$LANG"
+}
+
+# Si ce script est exécuté directement
+if [ "$0" = "$BASH_SOURCE" ]; then
+  detect_language
 fi

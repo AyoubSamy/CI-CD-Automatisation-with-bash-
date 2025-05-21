@@ -1,119 +1,74 @@
+/*
+ * process_handler.c - Gestionnaire de processus pour fork/thread
+ * Ce module est appelé par cicdgen.sh via l'option -f (fork) ou -t (thread)
+ * Il exécute des traitements parallèles simulés pour démonstration.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
 #include <pthread.h>
 #include <sys/wait.h>
+#include <string.h>
 
-/**
- * Structure pour passer des arguments aux threads
- */
-typedef struct {
-    char **command;
-    int command_length;
-} thread_args;
-
-/**
- * Fonction: thread_function
- * Description: Fonction exécutée par le thread
- * Paramètres:
- *   arg: Arguments du thread (commande à exécuter)
- */
-void *thread_function(void *arg) {
-    thread_args *args = (thread_args *)arg;
-    
-    // Exécution de la commande
-    pid_t pid = fork();
-    
-    if (pid == 0) {
-        // Processus fils
-        execvp(args->command[0], args->command);
-        perror("Erreur lors de l'exécution de la commande");
-        exit(EXIT_FAILURE);
-    } else if (pid > 0) {
-        // Processus parent
-        int status;
-        waitpid(pid, &status, 0);
-    } else {
-        // Erreur
-        perror("Fork failed");
-        exit(EXIT_FAILURE);
-    }
-    
+// ======== THREAD MODE ========
+void* thread_task(void* arg) {
+    int id = *((int*)arg);
+    printf("[THREAD] Tâche %d démarrée.\n", id);
+    sleep(2); // Simulation d'une tâche
+    printf("[THREAD] Tâche %d terminée.\n", id);
     return NULL;
 }
 
-/**
- * Fonction: execute_fork_mode
- * Description: Exécute une commande en utilisant le fork
- * Paramètres:
- *   command: Commande à exécuter
- */
-void execute_fork_mode(char **command) {
-    pid_t pid = fork();
-    
-    if (pid == 0) {
-        // Processus fils
-        execvp(command[0], command);
-        perror("Erreur lors de l'exécution de la commande");
-        exit(EXIT_FAILURE);
-    } else if (pid > 0) {
-        // Processus parent
-        int status;
-        waitpid(pid, &status, 0);
-    } else {
-        // Erreur
-        perror("Fork failed");
-        exit(EXIT_FAILURE);
+void execute_threads(int count) {
+    pthread_t threads[count];
+    int ids[count];
+    for (int i = 0; i < count; i++) {
+        ids[i] = i + 1;
+        pthread_create(&threads[i], NULL, thread_task, &ids[i]);
+    }
+    for (int i = 0; i < count; i++) {
+        pthread_join(threads[i], NULL);
     }
 }
 
-/**
- * Fonction: execute_thread_mode
- * Description: Exécute une commande en utilisant des threads
- * Paramètres:
- *   command: Commande à exécuter
- */
-void execute_thread_mode(char **command) {
-    pthread_t thread;
-    thread_args args;
-    
-    args.command = command;
-    args.command_length = 0;
-    while (command[args.command_length] != NULL) {
-        args.command_length++;
+// ======== FORK MODE ========
+void execute_forks(int count) {
+    for (int i = 0; i < count; i++) {
+        pid_t pid = fork();
+        if (pid == 0) {
+            printf("[FORK] Processus fils %d démarré (PID: %d)\n", i + 1, getpid());
+            sleep(2); // Simulation d'une tâche
+            printf("[FORK] Processus fils %d terminé (PID: %d)\n", i + 1, getpid());
+            exit(0);
+        }
     }
-    
-    if (pthread_create(&thread, NULL, thread_function, &args) != 0) {
-        perror("Erreur lors de la création du thread");
-        exit(EXIT_FAILURE);
-    }
-    
-    if (pthread_join(thread, NULL) != 0) {
-        perror("Erreur lors de l'attente du thread");
-        exit(EXIT_FAILURE);
-    }
+    // Attente de tous les fils
+    while (wait(NULL) > 0);
 }
 
-/**
- * Fonction principale
- */
-int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        fprintf(stderr, "Usage: %s --mode=<fork|thread> command [args...]\n", argv[0]);
-        return EXIT_FAILURE;
+// ======== MAIN ========
+int main(int argc, char* argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s [-f|-t] <nombre_de_tâches>\n", argv[0]);
+        return 1;
     }
-    
-    char **command = &argv[2];
-    
-    if (strcmp(argv[1], "--mode=fork") == 0) {
-        execute_fork_mode(command);
-    } else if (strcmp(argv[1], "--mode=thread") == 0) {
-        execute_thread_mode(command);
+
+    int count = atoi(argv[2]);
+
+    if (count <= 0) {
+        fprintf(stderr, "Le nombre de tâches doit être supérieur à zéro.\n");
+        return 2;
+    }
+
+    if (strcmp(argv[1], "-f") == 0) {
+        execute_forks(count);
+    } else if (strcmp(argv[1], "-t") == 0) {
+        execute_threads(count);
     } else {
-        fprintf(stderr, "Mode inconnu: %s\n", argv[1]);
-        return EXIT_FAILURE;
+        fprintf(stderr, "Option invalide : utilisez -f (fork) ou -t (thread).\n");
+        return 3;
     }
-    
-    return EXIT_SUCCESS;
+
+    return 0;
 }

@@ -1,0 +1,18 @@
+#template GitLab CI pour Node.js  
+image: node:18
+
+stages:
+  - install
+  - lint
+# Les blocs de test seront insérés ici
+# Les blocs de déploiement seront insérés ici
+
+install:
+  stage: install
+  script:
+    - npm install
+
+lint:
+  stage: lint
+  script:
+    - npm run lint
