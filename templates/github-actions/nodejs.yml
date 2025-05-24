@@ -1,5 +1,5 @@
 # workflow GitHub Actions pour Node.js
-
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: CI
 
 on:
@@ -27,4 +27,6 @@ jobs:
       - run: npm run lint
 
 # Les jobs de test et de deploy seront ajoutés ici
+
+
 

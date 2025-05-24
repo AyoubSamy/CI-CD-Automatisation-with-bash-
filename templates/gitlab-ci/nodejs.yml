@@ -4,8 +4,8 @@ image: node:18
 stages:
   - install
   - lint
-# Les blocs de test seront insérés ici
-# Les blocs de déploiement seront insérés ici
+  - unit test 
+  - integration test
 
 install:
   stage: install
@@ -16,3 +16,7 @@ lint:
   stage: lint
   script:
     - npm run lint
+
+
+
+

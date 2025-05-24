@@ -1,0 +1,8 @@
+unit_tests:
+  stage: test
+  script:
+    - npm test
+integration_tests:
+  stage: integration
+  script:
+    - npm run test:integration

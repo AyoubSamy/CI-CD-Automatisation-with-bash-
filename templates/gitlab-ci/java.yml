@@ -1,0 +1,15 @@
+#template GitLab CI pour Java
+image: maven:3.8.7-openjdk-17
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+  script:
+    - mvn clean compile
+
+# Les jobs de déploiement seront ajoutés ici
+

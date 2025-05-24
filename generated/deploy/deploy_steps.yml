@@ -1,0 +1,15 @@
+deploy_dev:
+  stage: deploy
+  script:
+    - echo 'Déploiement Node.js vers dev...' && npm run deploy:dev
+
+deploy_staging:
+  stage: deploy
+  script:
+    - echo 'Déploiement Node.js vers staging...' && npm run deploy:staging
+
+deploy_pro:
+  stage: deploy
+  script:
+    - echo 'Déploiement Node.js vers pro...' && npm run deploy:pro
+

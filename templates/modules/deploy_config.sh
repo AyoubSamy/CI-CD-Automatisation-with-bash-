@@ -13,26 +13,28 @@ mkdir -p "$DEPLOY_DIR"
 DEPLOY_FILE="$DEPLOY_DIR/deploy_steps.yml"
 > "$DEPLOY_FILE"
 
-# Fonction de génération de blocs de déploiement YAML
+# Fonction de génération de blocs de déploiement YAML (GitLab CI syntaxe)
 function generate_deploy_block {
   local env="$1"
-  echo "  - stage: deploy" >> "$DEPLOY_FILE"
-  echo "    name: Deploy to $env" >> "$DEPLOY_FILE"
-
+  local job_name="deploy_${env}"
+  echo "${job_name}:" >> "$DEPLOY_FILE"
+  echo "  stage: deploy" >> "$DEPLOY_FILE"
+  echo "  script:" >> "$DEPLOY_FILE"
   case "$LANGUAGE" in
     nodejs)
-      echo "    script: echo 'Déploiement Node.js vers $env...' && npm run deploy:$env" >> "$DEPLOY_FILE"
+      echo "    - echo 'Déploiement Node.js vers $env...' && npm run deploy:$env" >> "$DEPLOY_FILE"
       ;;
     python)
-      echo "    script: echo 'Déploiement Python vers $env...' && ./scripts/deploy.sh $env" >> "$DEPLOY_FILE"
+      echo "    - echo 'Déploiement Python vers $env...' && ./scripts/deploy.sh $env" >> "$DEPLOY_FILE"
       ;;
     java)
-      echo "    script: echo 'Déploiement Java vers $env...' && ./gradlew deploy -Penvironment=$env" >> "$DEPLOY_FILE"
+      echo "    - echo 'Déploiement Java vers $env...' && ./gradlew deploy -Penvironment=$env" >> "$DEPLOY_FILE"
       ;;
     *)
-      echo "    script: echo 'Déploiement générique vers $env...'" >> "$DEPLOY_FILE"
+      echo "    - echo 'Déploiement générique vers $env...'" >> "$DEPLOY_FILE"
       ;;
   esac
+  echo "" >> "$DEPLOY_FILE"
 }
 
 # Séparer les environnements et les parcourir

@@ -1,0 +1,22 @@
+#template GitLab CI pour Python
+image: python:3.11
+
+stages:
+  - install
+  - lint
+  - test
+  - deploy
+
+install:
+  stage: install
+  script:
+    - pip install -r requirements.txt
+
+lint:
+  stage: lint
+  script:
+    - flake8 .
+
+
+# Les jobs de déploiement seront ajoutés ici
+

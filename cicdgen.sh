@@ -1,10 +1,7 @@
 #!/bin/bash
 
-# ===========================
-# cicdgen.sh - Générateur CI/CD Principal
-# ===========================
+# ---------- Configuration initiale des variables globale : ----------
 
-# ---------- Configuration initiale ----------
 DEFAULT_LOG_DIR="/var/log/cicdgen"
 LOG_DIR="$DEFAULT_LOG_DIR"
 PLATFORM=""
@@ -19,7 +16,8 @@ USE_THREAD=false
 USE_SUBSHELL=false
 RESET_CONFIG=false
 
-# ---------- Aide ----------
+# ---------- Help function :  ----------
+
 function show_help {
   echo -e "\nUsage: $0 [options]"
   echo -e "\nOptions :"
@@ -40,28 +38,30 @@ function show_help {
 }
 
 # ---------- Logging ----------
+
 function log {
-  local type="$1"
-  local msg="$2"
-  local ts=$(date '+%Y-%m-%d-%H-%M-%S')
-  local user=$(whoami)
-  echo "$ts : $user : $type : $msg" | tee -a "$LOG_DIR/history.log"
+  local type="$1" #le type de message (ex : INFOS, ERROR)
+  local msg="$2" 
+  local ts=$(date '+%Y-%m-%d-%H-%M-%S') #retourner la date actuelle 
+  local user=$(whoami) # retourn l'utilisateur actuelle 
+  echo "$ts : $user : $type : $msg" | tee -a "$LOG_DIR/history.log" # affichage du message dans le terminale est le meme message 
+                                                                    # sera etre ajouter a la fin du fichier dese logs. 
 }
 
-# ---------- Reset Config ----------
+# ---------- Reset Config ---------- #permet la reinitialisation de fichier log si l'utilisateur a les droits necesaire
 function reset_config {
-  if [ "$EUID" -ne 0 ]; then
-    log "ERROR" "Réinitialisation requiert les droits root."
+  if [ "$EUID" -ne 0 ]; then #$EUID retourne 0 si l'utilisateur est Root 
+    log "ERROR" "Réinitialisation requiert les droits root." 
     exit 102
   fi
-  rm -rf "$DEFAULT_LOG_DIR"
-  mkdir -p "$DEFAULT_LOG_DIR"
-  log "INFOS" "Configuration réinitialisée."
+  rm -rf "$DEFAULT_LOG_DIR" #supression de repertoire log 
+  mkdir -p "$DEFAULT_LOG_DIR" #la recreation de dossier log
+  log "INFOS" "Configuration réinitialisée."  #l'appelle a la fonction log 
   exit 0
 }
 
 # ---------- Parsing des options ----------
-while getopts ":hftsrl:p:g:e:cui:d:" opt; do
+while getopts ":hftsrl:p:g:e:cu i d:" opt; do #lire les options 
   case $opt in
     h) show_help ;;
     f) USE_FORK=true ;;
@@ -93,8 +93,10 @@ if [[ -z "$PLATFORM" || -z "$LANGUAGE" ]]; then
   exit 101
 fi
 
-mkdir -p "$LOG_DIR"
-log "INFOS" "Initialisation du pipeline"
+#la creation de repertiore des logs mais en cas ou il n'as pas deja exists 
+
+mkdir -p "$LOG_DIR" 
+log "INFOS" "Initialisation du pipeline" 
 
 # ---------- Détection automatique du langage ----------
 if [ "$LANGUAGE" = "auto" ]; then
@@ -102,13 +104,11 @@ if [ "$LANGUAGE" = "auto" ]; then
   log "INFOS" "Langage détecté automatiquement: $LANGUAGE"
 fi
 
-mkdir -p generated   #creation du repertoire generated qui va contenire les fichier .yml avant de les fusionner dans github-actions selon la platforme
+mkdir -p generated   #creation du repertoire generated qui va contenire les fichier .yml avant de les fusionner dans github-actions ou selon la platforme choisi par l'utilisateur
 
 # ---------- Appels de modules ----------
 if $ENABLE_UNIT_TESTS || $ENABLE_INTEGRATION_TESTS; then
-  bash templates/modules/generate_tests.sh "$LANGUAGE" "$ENABLE_UNIT_TESTS" "$ENABLE_INTEGRATION_TESTS"  #appel du script qui va generer les test si l'un des v
-  # variables integration test ou Unit_test est vrai 
-
+  bash templates/modules/generate_tests.sh "$LANGUAGE" "$ENABLE_UNIT_TESTS" "$ENABLE_INTEGRATION_TESTS" "$PLATFORM"
   log "INFOS" "Blocs de tests générés."
 fi
 
@@ -117,7 +117,8 @@ if $ENABLE_CODE_ANALYSIS; then
   log "INFOS" "Analyse de code terminée."
 fi
 
-if [ "$ENABLE_DEPLOY" = "true" ] && [ -n "$ENVIRONMENTS" ]; then
+if [ "$ENABLE_DEPLOY" = "true" ] && [ -n "$ENVIRONMENTS" ]; then #l'appelle du Script deploy_.config.sh si 
+                                                                #l'ooption -d est true est -e a au moins une environnement 
   bash templates/modules/deploy_config.sh "$LANGUAGE" "$ENVIRONMENTS"
   log "INFOS" "Étapes de déploiement configurées."
 fi
@@ -149,14 +150,22 @@ case $PLATFORM in
     cp templates/jenkins/Jenkinsfile-$LANGUAGE "$PIPELINE_FILE"
     ;;
   *)
-    log "ERROR" "Plateforme non supportée: $PLATFORM"
+    log "ERROR" "Plateforme non supportée: $PLATFORM" 
     exit 103
     ;;
 esac
 
 # Ajouter les blocs générés (tests + deploy)
-cat generated/test_blocks.yml >> "$PIPELINE_FILE" 2>/dev/null
-cat generated/deploy/deploy_steps.yml >> "$PIPELINE_FILE" 2>/dev/null
+
+if [ -s generated/test_blocks.yml ]; then
+  echo "" >> "$PIPELINE_FILE"
+  cat generated/test_blocks.yml >> "$PIPELINE_FILE"
+fi
+
+if [ -s generated/deploy/deploy_steps.yml ]; then
+  echo "" >> "$PIPELINE_FILE"
+  cat generated/deploy/deploy_steps.yml >> "$PIPELINE_FILE"
+fi
 
 log "INFOS" "Pipeline final généré : $PIPELINE_FILE"
 

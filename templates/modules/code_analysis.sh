@@ -4,6 +4,7 @@
 # Utilisé dans le pipeline CI/CD généré automatiquement
 
 # Argument : langage ciblé pour l'analyse
+
 LANGUAGE="$1"  # Langage à analyser (nodejs, python, java)
 
 # Création du dossier de rapport si inexistant
@@ -24,7 +25,8 @@ function run_analysis {
   case "$LANGUAGE" in
     nodejs)
       # Analyse Node.js avec ESLint
-      if command -v eslint &>/dev/null; then
+      if command -v eslint &>/dev/null; then # verifier si la commande eslint existe si non 
+                                             # afficher ESLint non installe 
         log_analysis "Analyse avec ESLint..."
         eslint . | tee -a "$REPORT_FILE"
       else

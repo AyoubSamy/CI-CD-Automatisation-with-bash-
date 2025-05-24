@@ -1,0 +1,45 @@
+#template GitLab CI pour Node.js  
+image: node:18
+
+stages:
+  - install
+  - lint
+  - test
+  - integration
+  - deploy
+
+install:
+  stage: install
+  script:
+    - npm install
+
+lint:
+  stage: lint
+  script:
+    - npm run lint
+
+
+test:
+  stage: test
+  script:
+    - npm test
+integration:
+  stage: integration
+  script:
+    - npm run test:integration
+
+deploy_dev:
+  stage: deploy
+  script:
+    - echo 'Déploiement Node.js vers dev...' && npm run deploy:dev
+
+deploy_staging:
+  stage: deploy
+  script:
+    - echo 'Déploiement Node.js vers staging...' && npm run deploy:staging
+
+deploy_pro:
+  stage: deploy
+  script:
+    - echo 'Déploiement Node.js vers pro...' && npm run deploy:pro
+
