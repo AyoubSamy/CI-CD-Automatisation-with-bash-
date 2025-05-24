@@ -1,0 +1,16 @@
+# Blocs de tests générés
+unit_tests:
+  stage: test
+  script:
+    - echo "Lancement des tests unitaires Node.js"
+    - npm install
+    - npm test
+  only:
+    - branches
+integration_tests:
+  stage: test
+  script:
+    - echo "Lancement des tests d'intégration Node.js"
+    - npm run integration-test
+  only:
+    - branches
