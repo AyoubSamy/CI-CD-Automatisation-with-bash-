@@ -1,0 +1,26 @@
+stages:
+  - install
+  - lint
+  - test
+  - build
+  - deploy
+
+install:
+  script:
+    - npm install
+
+lint:
+  script:
+    - npm run lint
+
+test:
+  script:
+    - npm test
+
+build:
+  script:
+    - npm run build
+
+deploy:
+  script:
+    - echo "Déploiement en $ENVIRONMENT"
