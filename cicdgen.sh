@@ -76,7 +76,7 @@ while getopts ":hftsrl:p:g:e:cu i d:" opt; do #lire les options
     u) ENABLE_UNIT_TESTS=true ;;
     i) ENABLE_INTEGRATION_TESTS=true ;;
     d) ENABLE_DEPLOY=$OPTARG ;;
-    :) log "ERROR" "Option -$OPTARG requiert une valeur." ; show_help ; exit 101 ;;
+    :) log "ERROR" "Option -$OPTARG requiert une valeur." ; show_help ; exit 101 ;; # si l'utilisateur il specifie l'argument . 
     \?) log "ERROR" "Option invalide: -$OPTARG" ; show_help ; exit 100 ;;
   esac
 done
@@ -87,11 +87,11 @@ if [ "$RESET_CONFIG" = true ]; then
 fi
 
 # ---------- Validation ----------
-if [[ -z "$PLATFORM" || -z "$LANGUAGE" ]]; then
-  log "ERROR" "Les options -p (plateforme) et -g (langage) sont obligatoires."
-  show_help
-  exit 101
-fi
+# if [[ -z "$PLATFORM" || -z "$LANGUAGE" ]]; then
+#   log "ERROR" "Les options -p (plateforme) et -g (langage) sont obligatoires."
+#   show_help
+#   exit 101
+# fi
 
 #la creation de repertiore des logs mais en cas ou il n'as pas deja exists 
 
@@ -101,7 +101,7 @@ log "INFOS" "Initialisation du pipeline"
 # ---------- Détection automatique du langage ----------
 if [ "$LANGUAGE" = "auto" ]; then
   LANGUAGE=$(bash templates/modules/detect_project.sh)  # fiare un appelle a detect_project.sh
-  log "INFOS" "Langage détecté automatiquement: $LANGUAGE"
+  log "INFOS" "Langage détecté automatiquement: $LANGAGE"
 fi
 
 mkdir -p generated   #creation du repertoire generated qui va contenire les fichier .yml avant de les fusionner dans github-actions ou selon la platforme choisi par l'utilisateur
@@ -117,9 +117,8 @@ if $ENABLE_CODE_ANALYSIS; then
   log "INFOS" "Analyse de code terminée."
 fi
 
-if [ "$ENABLE_DEPLOY" = "true" ] && [ -n "$ENVIRONMENTS" ]; then #l'appelle du Script deploy_.config.sh si 
-                                                                #l'ooption -d est true est -e a au moins une environnement 
-  bash templates/modules/deploy_config.sh "$LANGUAGE" "$ENVIRONMENTS"
+if [ "$ENABLE_DEPLOY" = "true" ] && [ -n "$ENVIRONMENTS" ]; then
+  bash templates/modules/deploy_config.sh "$LANGUAGE" "$ENVIRONMENTS" "$PLATFORM"
   log "INFOS" "Étapes de déploiement configurées."
 fi
 
@@ -132,6 +131,43 @@ fi
 if $USE_THREAD; then
   ./templates/modules/process_handler -t 2
   log "INFOS" "Thread exécuté."
+fi
+
+# ---------- Subshell Execution ----------
+if $USE_SUBSHELL; then
+    log "INFOS" "Exécution des commandes dans un sous-shell"
+    chmod +x templates/modules/subshell_handler.sh
+    
+    # Exécuter les commandes de génération dans un sous-shell
+    if $ENABLE_UNIT_TESTS || $ENABLE_INTEGRATION_TESTS; then
+        ./templates/modules/subshell_handler.sh "bash templates/modules/generate_tests.sh '$LANGUAGE' '$ENABLE_UNIT_TESTS' '$ENABLE_INTEGRATION_TESTS' '$PLATFORM'"
+    fi
+
+    if $ENABLE_CODE_ANALYSIS; then
+        ./templates/modules/subshell_handler.sh "bash templates/modules/code_analysis.sh '$LANGUAGE'"
+    fi
+
+    if [ "$ENABLE_DEPLOY" = "true" ] && [ -n "$ENVIRONMENTS" ]; then
+        ./templates/modules/subshell_handler.sh "bash templates/modules/deploy_config.sh '$LANGUAGE' '$ENVIRONMENTS' '$PLATFORM'"
+    fi
+    
+    log "INFOS" "Exécution en sous-shell terminée"
+else
+    # Code existant pour l'exécution normale
+    if $ENABLE_UNIT_TESTS || $ENABLE_INTEGRATION_TESTS; then
+        bash templates/modules/generate_tests.sh "$LANGUAGE" "$ENABLE_UNIT_TESTS" "$ENABLE_INTEGRATION_TESTS" "$PLATFORM"
+        log "INFOS" "Blocs de tests générés."
+    fi
+
+    if $ENABLE_CODE_ANALYSIS; then
+        bash templates/modules/code_analysis.sh "$LANGUAGE"
+        log "INFOS" "Analyse de code terminée."
+    fi
+
+    if [ "$ENABLE_DEPLOY" = "true" ] && [ -n "$ENVIRONMENTS" ]; then
+        bash templates/modules/deploy_config.sh "$LANGUAGE" "$ENVIRONMENTS" "$PLATFORM"
+        log "INFOS" "Étapes de déploiement configurées."
+    fi
 fi
 
 # ---------- Construction du pipeline final ----------

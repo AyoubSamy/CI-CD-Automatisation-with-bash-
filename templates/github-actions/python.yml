@@ -1,4 +1,5 @@
 # workflow GitHub Actions pour Python
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: Python CI
 
 on:
