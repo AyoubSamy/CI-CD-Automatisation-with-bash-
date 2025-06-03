@@ -1,6 +1,0 @@
-  unit_tests:
-    runs-on: ubuntu-latest
-    needs: install
-    steps:
-      - uses: actions/checkout@v3
-      - run: pytest tests/unit

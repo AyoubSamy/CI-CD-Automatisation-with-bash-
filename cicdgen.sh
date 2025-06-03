@@ -48,17 +48,6 @@ function log {
                                                                     # sera etre ajouter a la fin du fichier dese logs. 
 }
 
-# ---------- Reset Config ---------- #permet la reinitialisation de fichier log si l'utilisateur a les droits necesaire
-function reset_config {
-  if [ "$EUID" -ne 0 ]; then #$EUID retourne 0 si l'utilisateur est Root 
-    log "ERROR" "Réinitialisation requiert les droits root." 
-    exit 102
-  fi
-  rm -rf "$DEFAULT_LOG_DIR" #supression de repertoire log 
-  mkdir -p "$DEFAULT_LOG_DIR" #la recreation de dossier log
-  log "INFOS" "Configuration réinitialisée."  #l'appelle a la fonction log 
-  exit 0
-}
 
 # ---------- Parsing des options ----------
 while getopts ":hftsrl:p:g:e:cu i d:" opt; do #lire les options 
@@ -80,6 +69,18 @@ while getopts ":hftsrl:p:g:e:cu i d:" opt; do #lire les options
     \?) log "ERROR" "Option invalide: -$OPTARG" ; show_help ; exit 100 ;;
   esac
 done
+
+# ---------- Reset Config ---------- #permet la reinitialisation de fichier log si l'utilisateur a les droits necesaire
+function reset_config {
+  if [ "$EUID" -ne 0 ]; then
+    log "ERROR" "Réinitialisation requiert les droits root."
+    exit 102
+  fi
+  rm -rf "$LOG_DIR"
+  mkdir -p "$LOG_DIR"
+  log "INFOS" "Configuration réinitialisée."
+  exit 0
+}
 
 # ---------- Reset immédiat ----------
 if [ "$RESET_CONFIG" = true ]; then
@@ -182,9 +183,9 @@ case $PLATFORM in
     mkdir -p generated/.github/workflows
     cp templates/github-actions/$LANGUAGE.yml "$PIPELINE_FILE"
     ;;
-  jenkins)
-    cp templates/jenkins/Jenkinsfile-$LANGUAGE "$PIPELINE_FILE"
-    ;;
+  # jenkins)
+  #   cp templates/jenkins/Jenkinsfile-$LANGUAGE "$PIPELINE_FILE"
+  #   ;;
   *)
     log "ERROR" "Plateforme non supportée: $PLATFORM" 
     exit 103

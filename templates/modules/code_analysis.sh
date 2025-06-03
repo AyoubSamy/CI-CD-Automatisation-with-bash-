@@ -37,7 +37,7 @@ function run_analysis {
       # Analyse Python avec Pylint
       if command -v pylint &>/dev/null; then
         log_analysis "Analyse avec Pylint..."
-        pylint $(find . -name "*.py") | tee -a "$REPORT_FILE"
+        pylint --ignore=vnv --ignore=venv $(find . -name "*.py" -not -path "./vnv/*" -not -path "./venv/*") | tee -a "$REPORT_FILE"
       else
         log_analysis "Erreur: Pylint non installé."
       fi

@@ -57,8 +57,13 @@ void execute_forks(int count) {
     for (int i = 0; i < count; i++) {
         pid_t pid = fork();
         if (pid == 0) {
-            printf("[FORK] Processus fils %d démarré (PID: %d)\n", i + 1, getpid());
-            sleep(2); // Simulation d'une tâche
+            if (i == 0) {
+                printf("[FORK] Processus fils %d (PID: %d) : génération des tests\n", i + 1, getpid());
+                system("bash templates/modules/generate_tests.sh python true false github");
+            } else {
+                printf("[FORK] Processus fils %d (PID: %d) : génération du déploiement\n", i + 1, getpid());
+                system("bash templates/modules/deploy_config.sh python dev,staging github");
+            }
             printf("[FORK] Processus fils %d terminé (PID: %d)\n", i + 1, getpid());
             exit(0);
         }
